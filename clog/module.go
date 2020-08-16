@@ -3,10 +3,16 @@ package clog
 import (
 	"context"
 	log_prefixed "github.com/chappjc/logrus-prefix"
+	"github.com/davecgh/go-spew/spew"
+	"github.com/knq/sdhook"
 	"github.com/sirupsen/logrus"
+	"gopkg.zouai.io/colossus/colossusconfig"
+	"os"
 )
 
-type Logger interface {
+
+
+type LoggerInterface interface {
 	Info(ctx context.Context, msg string)
 	Infof(ctx context.Context, format string, args ...interface{})
 	Warn(ctx context.Context, msg string)
@@ -24,11 +30,63 @@ type Logger interface {
 	WithPrefix(ctx context.Context, prefix string) context.Context
 }
 
-func NewRootLogger(ctx context.Context, appName string) (context.Context, *logrus.Logger) {
+type Logger struct {
+	*logrus.Logger
+}
+
+func NewRootLogger(ctx context.Context, appName string) (context.Context, *Logger) {
+	spew.Dump(colossusconfig.DefaultConfig)
 	logger := logrus.New()
 	logger.Formatter = &log_prefixed.TextFormatter{}
 	instance := &LogInstance{logger:logger.WithField("prefix", appName), prefix:appName}
-	return context.WithValue(ctx, ctxKey, instance), logger
+	l := &Logger{
+		Logger: logger,
+	}
+	subCtx := context.WithValue(ctx, ctxKey, instance)
+	if colossusconfig.DefaultConfig.Colossus.Logging.StackDriver {
+		l.EnableStackDriverLogging(subCtx)
+	}
+	return subCtx, l
+}
+
+func (m *Logger) EnableStackDriverLogging(ctx context.Context) *Logger {
+	hasTarget := false
+	if colossusconfig.DefaultConfig.Colossus.Logging.StackDriver_.UseLoggingAgent {
+		h, err := sdhook.New(
+			sdhook.GoogleLoggingAgent(),
+			sdhook.LogName("colossus"),
+		)
+		if err != nil {
+			m.Logger.Errorf("Error creating stackdriver Logger: %v", err)
+			panic(err)
+		} else {
+			m.Hooks.Add(h)
+			logrus.RegisterExitHandler(h.Wait)
+			hasTarget = true
+		}
+	}
+	 if colossusconfig.DefaultConfig.Colossus.Logging.StackDriver_.UseApplicationDefaultCredentials || !hasTarget {
+		// UseApplicationDefaultCredentials will be the default case
+		hostname, err := os.Hostname()
+		if err != nil {
+			m.Logger.Errorf("Error determining hostname: %v", err)
+		}
+		h, err := sdhook.New(
+			sdhook.GoogleServiceAccountCredentialsFile(colossusconfig.DefaultConfig.Google.Application.Credentials),
+			sdhook.Resource("generic_node", map[string]string{
+				"project_id": "colossus-test",
+				"node_id": hostname,
+			}),
+			sdhook.LogName("colossus"),
+		)
+		if err != nil {
+			m.Logger.Errorf("Error creating stackdriver Logger: %v", err)
+			panic(err)
+		}
+		m.Hooks.Add(h)
+		logrus.RegisterExitHandler(h.Wait)
+	}
+	return m
 }
 
 type keyT string
