@@ -4,6 +4,7 @@ import (
 	"cloud.google.com/go/compute/metadata"
 	"context"
 	log_prefixed "github.com/chappjc/logrus-prefix"
+	"github.com/knq/jwt/gserviceaccount"
 	"github.com/knq/sdhook"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh/terminal"
@@ -85,11 +86,16 @@ func (m *Logger) EnableStackDriverLogging(ctx context.Context) *Logger {
 		if err != nil {
 			m.Logger.Errorf("Error determining instance zone: %v", err)
 		}
+		project, err := metadata.ProjectID()
+		if err != nil {
+			m.Logger.Errorf("Error determining instance project: %v", err)
+			panic(err)
+		}
 		h, err := sdhook.New(
 			sdhook.GoogleComputeCredentials(""),
 			sdhook.LogName("colossus"),
 			sdhook.Resource("gce_instance", map[string]string{
-				"project_id": "colossus-test",
+				"project_id": project,
 				"node_id": instanceId,
 				"instance_id": instanceId,
 				"zone": zone,
@@ -110,10 +116,18 @@ func (m *Logger) EnableStackDriverLogging(ctx context.Context) *Logger {
 		if err != nil {
 			m.Logger.Errorf("Error determining hostname: %v", err)
 		}
+		data, err := ioutil.ReadFile(colossusconfig.DefaultConfig.Google.Application.Credentials)
+		if err != nil {
+			panic(err)
+		}
+		 gsa, err := gserviceaccount.FromJSON(data)
+		 if err != nil {
+			panic(err)
+		 }
 		h, err := sdhook.New(
-			sdhook.GoogleServiceAccountCredentialsFile(colossusconfig.DefaultConfig.Google.Application.Credentials),
+			sdhook.GoogleServiceAccountCredentialsJSON(data),
 			sdhook.Resource("generic_node", map[string]string{
-				"project_id": "colossus-test",
+				"project_id": gsa.ProjectID,
 				"node_id": hostname,
 			}),
 			sdhook.LogName("colossus"),
