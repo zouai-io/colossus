@@ -10,6 +10,7 @@ type Config struct {
 			StackDriver  bool `desc:"Send Logs to GCP Stackdriver"`
 			StackDriver_ struct {
 				UseLoggingAgent bool `desc:"Use the GCP Logging Agent to send logs"`
+				UseGCE bool `desc:"Use the GCE Metadata to configure the logger"`
 				UseApplicationDefaultCredentials bool `desc:"Use the ApplicationDefaultCredentials to send logs directly to GCP"`
 			} `desc:"Stackdriver Logging Config" envconfig:"STACKDRIVER"`
 		} `desc:"Colossus Logging configuration"`

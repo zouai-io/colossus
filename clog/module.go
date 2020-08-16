@@ -57,11 +57,25 @@ func (m *Logger) EnableStackDriverLogging(ctx context.Context) *Logger {
 		if err != nil {
 			m.Logger.Errorf("Error creating stackdriver Logger: %v", err)
 			panic(err)
-		} else {
+		}
 			m.Hooks.Add(h)
 			logrus.RegisterExitHandler(h.Wait)
 			hasTarget = true
+
+	}
+	if colossusconfig.DefaultConfig.Colossus.Logging.StackDriver_.UseGCE {
+		h, err := sdhook.New(
+			sdhook.GoogleComputeCredentials(""),
+			sdhook.LogName("colossus"),
+		)
+		if err != nil {
+			m.Logger.Errorf("Error creating stackdriver Logger: %v", err)
+			panic(err)
 		}
+			m.Hooks.Add(h)
+			logrus.RegisterExitHandler(h.Wait)
+			hasTarget = true
+
 	}
 	 if colossusconfig.DefaultConfig.Colossus.Logging.StackDriver_.UseApplicationDefaultCredentials || !hasTarget {
 		// UseApplicationDefaultCredentials will be the default case
