@@ -78,7 +78,7 @@ func (m *Logger) EnableStackDriverLogging(ctx context.Context) *Logger {
 
 	}
 	if colossusconfig.DefaultConfig.Colossus.Logging.StackDriver_.UseGCE {
-		instanceId, err := metadata.InstanceID()
+		instanceId, err := metadata.InstanceName()
 		if err != nil {
 			m.Logger.Errorf("Error determining instance id: %v", err)
 		}
@@ -95,10 +95,9 @@ func (m *Logger) EnableStackDriverLogging(ctx context.Context) *Logger {
 			sdhook.GoogleComputeCredentials(""),
 			sdhook.LogName("colossus"),
 			sdhook.ProjectID(project),
-			sdhook.Resource("gce_instance", map[string]string{
+			sdhook.Resource("generic_node", map[string]string{
 				"project_id": project,
 				"node_id": instanceId,
-				"instance_id": instanceId,
 				"zone": zone,
 			}),
 		)
