@@ -87,7 +87,7 @@ func (m *Logger) EnableStackDriverLogging(ctx context.Context) *Logger {
 			m.Logger.Errorf("Error determining instance project: %v", err)
 			panic(err)
 		}
-		m.Logger.Infof("Starting StackDriver Logging via GCE on project '%s' with node id `%s`")
+		m.Logger.Infof("Starting StackDriver Logging via GCE on project '%s' with node id `%s`", project, instanceId)
 		h, err := sdhook.New(
 			sdhook.GoogleComputeCredentials(""),
 			sdhook.LogName("colossus"),
