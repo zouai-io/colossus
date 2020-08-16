@@ -6,6 +6,7 @@ import (
 	"github.com/knq/sdhook"
 	"github.com/sirupsen/logrus"
 	"gopkg.zouai.io/colossus/colossusconfig"
+	"io/ioutil"
 	"os"
 )
 
@@ -43,6 +44,9 @@ func NewRootLogger(ctx context.Context, appName string) (context.Context, *Logge
 	subCtx := context.WithValue(ctx, ctxKey, instance)
 	if colossusconfig.DefaultConfig.Colossus.Logging.StackDriver {
 		l.EnableStackDriverLogging(subCtx)
+	}
+	if colossusconfig.DefaultConfig.Colossus.Logging.DisableConsole {
+		logger.SetOutput(ioutil.Discard)
 	}
 	return subCtx, l
 }
