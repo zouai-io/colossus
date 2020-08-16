@@ -3,7 +3,6 @@ package clog
 import (
 	"context"
 	log_prefixed "github.com/chappjc/logrus-prefix"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/knq/sdhook"
 	"github.com/sirupsen/logrus"
 	"gopkg.zouai.io/colossus/colossusconfig"
@@ -35,7 +34,6 @@ type Logger struct {
 }
 
 func NewRootLogger(ctx context.Context, appName string) (context.Context, *Logger) {
-	spew.Dump(colossusconfig.DefaultConfig)
 	logger := logrus.New()
 	logger.Formatter = &log_prefixed.TextFormatter{}
 	instance := &LogInstance{logger:logger.WithField("prefix", appName), prefix:appName}
