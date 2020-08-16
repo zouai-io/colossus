@@ -82,15 +82,12 @@ func (m *Logger) EnableStackDriverLogging(ctx context.Context) *Logger {
 		if err != nil {
 			m.Logger.Errorf("Error determining instance id: %v", err)
 		}
-		zone, err := metadata.Zone()
-		if err != nil {
-			m.Logger.Errorf("Error determining instance zone: %v", err)
-		}
 		project, err := metadata.ProjectID()
 		if err != nil {
 			m.Logger.Errorf("Error determining instance project: %v", err)
 			panic(err)
 		}
+		m.Logger.Infof("Starting StackDriver Logging via GCE on project '%s' with node id `%s`")
 		h, err := sdhook.New(
 			sdhook.GoogleComputeCredentials(""),
 			sdhook.LogName("colossus"),
@@ -98,7 +95,6 @@ func (m *Logger) EnableStackDriverLogging(ctx context.Context) *Logger {
 			sdhook.Resource("generic_node", map[string]string{
 				"project_id": project,
 				"node_id": instanceId,
-				"zone": zone,
 			}),
 		)
 		if err != nil {
