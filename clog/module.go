@@ -1,10 +1,12 @@
 package clog
 
 import (
+	"cloud.google.com/go/compute/metadata"
 	"context"
 	log_prefixed "github.com/chappjc/logrus-prefix"
 	"github.com/knq/sdhook"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/ssh/terminal"
 	"gopkg.zouai.io/colossus/colossusconfig"
 	"io/ioutil"
 	"os"
@@ -36,7 +38,14 @@ type Logger struct {
 
 func NewRootLogger(ctx context.Context, appName string) (context.Context, *Logger) {
 	logger := logrus.New()
-	logger.Formatter = &log_prefixed.TextFormatter{}
+	if terminal.IsTerminal(int(os.Stdout.Fd())) {
+		logger.Formatter = &log_prefixed.TextFormatter{
+			ForceColors:true,
+			ForceFormatting:true,
+		}
+	} else {
+		logger.Formatter = &logrus.JSONFormatter{}
+	}
 	instance := &LogInstance{logger:logger.WithField("prefix", appName), prefix:appName}
 	l := &Logger{
 		Logger: logger,
@@ -68,9 +77,23 @@ func (m *Logger) EnableStackDriverLogging(ctx context.Context) *Logger {
 
 	}
 	if colossusconfig.DefaultConfig.Colossus.Logging.StackDriver_.UseGCE {
+		instanceId, err := metadata.InstanceID()
+		if err != nil {
+			m.Logger.Errorf("Error determining instance id: %v", err)
+		}
+		zone, err := metadata.Zone()
+		if err != nil {
+			m.Logger.Errorf("Error determining instance zone: %v", err)
+		}
 		h, err := sdhook.New(
 			sdhook.GoogleComputeCredentials(""),
 			sdhook.LogName("colossus"),
+			sdhook.Resource("gce_instance", map[string]string{
+				"project_id": "colossus-test",
+				"node_id": instanceId,
+				"instance_id": instanceId,
+				"zone": zone,
+			}),
 		)
 		if err != nil {
 			m.Logger.Errorf("Error creating stackdriver Logger: %v", err)
