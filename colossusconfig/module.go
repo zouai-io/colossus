@@ -14,6 +14,8 @@ type Config struct {
 				UseApplicationDefaultCredentials bool `desc:"Use the ApplicationDefaultCredentials to send logs directly to GCP"`
 			} `desc:"Stackdriver Logging Config" envconfig:"STACKDRIVER"`
 			DisableConsole bool `desc:"Disable Console Logging"`
+			ForceConsoleJSON bool `desc:"Force Console Logging to use JSON"`
+			ForceISaTTY bool `desc:"Force detection of a TTY in the console"`
 		} `desc:"Colossus Logging configuration"`
 	} `desc:"The global Colossus configuration"`
 	Google struct {
@@ -23,8 +25,13 @@ type Config struct {
 	}
 }
 
-var DefaultConfig = &Config{}
+var DefaultConfig *Config
 
 func init()  {
+	Init()
+}
+
+func Init() {
+	DefaultConfig = &Config{}
 	envconfig.MustProcess("", DefaultConfig)
 }

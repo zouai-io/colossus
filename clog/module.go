@@ -11,6 +11,7 @@ import (
 	"gopkg.zouai.io/colossus/colossusconfig"
 	"io/ioutil"
 	"os"
+	"time"
 )
 
 
@@ -39,13 +40,15 @@ type Logger struct {
 
 func NewRootLogger(ctx context.Context, appName string) (context.Context, *Logger) {
 	logger := logrus.New()
-	if terminal.IsTerminal(int(os.Stdout.Fd())) {
+	if (terminal.IsTerminal(int(os.Stdout.Fd())) || colossusconfig.DefaultConfig.Colossus.Logging.ForceISaTTY) && !colossusconfig.DefaultConfig.Colossus.Logging.ForceConsoleJSON {
 		logger.Formatter = &log_prefixed.TextFormatter{
 			ForceColors:true,
 			ForceFormatting:true,
 		}
 	} else {
-		logger.Formatter = &logrus.JSONFormatter{}
+		logger.Formatter = &logrus.JSONFormatter{
+			TimestampFormat:time.RFC3339Nano,
+		}
 	}
 	instance := &LogInstance{logger:logger.WithField("prefix", appName), prefix:appName}
 	l := &Logger{
