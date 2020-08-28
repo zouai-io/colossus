@@ -32,6 +32,8 @@ type LoggerInterface interface {
 
 	WithFields(ctx context.Context, fields map[string]interface{}) context.Context
 	WithPrefix(ctx context.Context, prefix string) context.Context
+	SubLoggerWithFields(ctx context.Context, fields map[string]interface{}) LoggerInterface
+	SubLoggerWithPrefix(ctx context.Context, prefix string) LoggerInterface
 }
 
 type Logger struct {
@@ -176,6 +178,194 @@ func WithPrefix(ctx context.Context, prefix string) context.Context {
 	m := logFromCtx(ctx)
 	nextInstance := &LogInstance{logger:m.logger.WithField("prefix", m.prefix+"/"+prefix), prefix:m.prefix+"/"+prefix}
 	return context.WithValue(ctx, ctxKey, nextInstance)
+}
+
+func SubLoggerWithFields(ctx context.Context, fields map[string]interface{}) LoggerInterface {
+	return &subLogger{
+		fields: fields,
+		prefix: nil,
+	}
+}
+
+func SubLoggerWithPrefix(ctx context.Context, prefix string) LoggerInterface {
+	return &subLogger{
+		fields: nil,
+		prefix: &prefix,
+	}
+}
+
+type subLogger struct {
+	fields map[string]interface{}
+	prefix *string
+}
+func (s *subLogger) Info(ctx context.Context, msg string) {
+	if s.fields != nil {
+		ctx = WithFields(ctx, s.fields)
+	}
+	if s.prefix != nil {
+		ctx = WithPrefix(ctx, *s.prefix)
+	}
+	m := logFromCtx(ctx)
+	m.logger.Info(msg)
+}
+func (s *subLogger) Infof(ctx context.Context, format string, args ...interface{}){
+	if s.fields != nil {
+		ctx = WithFields(ctx, s.fields)
+	}
+	if s.prefix != nil {
+		ctx = WithPrefix(ctx, *s.prefix)
+	}
+	m := logFromCtx(ctx)
+	m.logger.Infof(format, args...)
+}
+func (s *subLogger) Warn(ctx context.Context, msg string){
+	if s.fields != nil {
+		ctx = WithFields(ctx, s.fields)
+	}
+	if s.prefix != nil {
+		ctx = WithPrefix(ctx, *s.prefix)
+	}
+	m := logFromCtx(ctx)
+	m.logger.Warn(msg)
+}
+func (s *subLogger) Warnf(ctx context.Context, format string, args ...interface{}){
+	if s.fields != nil {
+		ctx = WithFields(ctx, s.fields)
+	}
+	if s.prefix != nil {
+		ctx = WithPrefix(ctx, *s.prefix)
+	}
+	m := logFromCtx(ctx)
+	m.logger.Warnf(format, args...)
+}
+func (s *subLogger) Err(ctx context.Context, err error, msg string){
+	if s.fields != nil {
+		ctx = WithFields(ctx, s.fields)
+	}
+	if s.prefix != nil {
+		ctx = WithPrefix(ctx, *s.prefix)
+	}
+	m := logFromCtx(ctx)
+	m.logger.WithError(err).Error(msg)
+}
+func (s *subLogger) Errf(ctx context.Context, err error, format string, args ...interface{}){
+	if s.fields != nil {
+		ctx = WithFields(ctx, s.fields)
+	}
+	if s.prefix != nil {
+		ctx = WithPrefix(ctx, *s.prefix)
+	}
+	m := logFromCtx(ctx)
+	m.logger.WithError(err).Errorf(format, args...)
+}
+func (s *subLogger) Error(ctx context.Context, msg string){
+	if s.fields != nil {
+		ctx = WithFields(ctx, s.fields)
+	}
+	if s.prefix != nil {
+		ctx = WithPrefix(ctx, *s.prefix)
+	}
+	m := logFromCtx(ctx)
+	m.logger.Error(msg)
+}
+func (s *subLogger) Errorf(ctx context.Context, format string, args ...interface{}){
+	if s.fields != nil {
+		ctx = WithFields(ctx, s.fields)
+	}
+	if s.prefix != nil {
+		ctx = WithPrefix(ctx, *s.prefix)
+	}
+	m := logFromCtx(ctx)
+	m.logger.Errorf(format, args...)
+}
+func (s *subLogger) Debug(ctx context.Context, msg string){
+	if s.fields != nil {
+		ctx = WithFields(ctx, s.fields)
+	}
+	if s.prefix != nil {
+		ctx = WithPrefix(ctx, *s.prefix)
+	}
+	m := logFromCtx(ctx)
+	m.logger.Debug(msg)
+}
+func (s *subLogger) Debugf(ctx context.Context, format string, args ...interface{}){
+	if s.fields != nil {
+		ctx = WithFields(ctx, s.fields)
+	}
+	if s.prefix != nil {
+		ctx = WithPrefix(ctx, *s.prefix)
+	}
+	m := logFromCtx(ctx)
+	m.logger.Debugf(format, args...)
+}
+func (s *subLogger) Trace(ctx context.Context, msg string){
+	if s.fields != nil {
+		ctx = WithFields(ctx, s.fields)
+	}
+	if s.prefix != nil {
+		ctx = WithPrefix(ctx, *s.prefix)
+	}
+	m := logFromCtx(ctx)
+	m.logger.Trace(msg)
+}
+func (s *subLogger) Tracef(ctx context.Context, format string, args ...interface{}){
+	if s.fields != nil {
+		ctx = WithFields(ctx, s.fields)
+	}
+	if s.prefix != nil {
+		ctx = WithPrefix(ctx, *s.prefix)
+	}
+	m := logFromCtx(ctx)
+	m.logger.Tracef(format, args...)
+}
+func (s *subLogger) WithFields(ctx context.Context, fields map[string]interface{}) context.Context {
+	if s.fields != nil {
+		ctx = WithFields(ctx, s.fields)
+	}
+	if s.prefix != nil {
+		ctx = WithPrefix(ctx, *s.prefix)
+	}
+	m := logFromCtx(ctx)
+	nextInstance := &LogInstance{logger:m.logger.WithFields(fields), prefix:m.prefix}
+	return context.WithValue(ctx, ctxKey, nextInstance)
+}
+
+func (s *subLogger) WithPrefix(ctx context.Context, prefix string) context.Context {
+	if s.fields != nil {
+		ctx = WithFields(ctx, s.fields)
+	}
+	if s.prefix != nil {
+		ctx = WithPrefix(ctx, *s.prefix)
+	}
+	m := logFromCtx(ctx)
+	nextInstance := &LogInstance{logger:m.logger.WithField("prefix", m.prefix+"/"+prefix), prefix:m.prefix+"/"+prefix}
+	return context.WithValue(ctx, ctxKey, nextInstance)
+}
+func (s *subLogger) SubLoggerWithFields(ctx context.Context, fields map[string]interface{}) LoggerInterface {
+	fieldCopy := map[string]interface{}{}
+	if s.fields != nil {
+		for oldKey, old := range s.fields {
+			fieldCopy[oldKey] = old
+		}
+	}
+	for newKey, new := range fields {
+		fieldCopy[newKey] = new
+	}
+	return &subLogger{
+		fields: fieldCopy,
+		prefix: s.prefix,
+	}
+}
+
+func (s *subLogger) SubLoggerWithPrefix(ctx context.Context, prefix string) LoggerInterface {
+	p := prefix
+	if s.prefix != nil {
+		p = *s.prefix+"/"+prefix
+	}
+	return &subLogger{
+		fields: nil,
+		prefix: &p,
+	}
 }
 
 func Info(ctx context.Context, msg string) {
