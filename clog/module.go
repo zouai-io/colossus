@@ -33,6 +33,7 @@ type LoggerInterface interface {
 	WithPrefix(ctx context.Context, prefix string) context.Context
 	SubLoggerWithFields(ctx context.Context, fields map[string]interface{}) LoggerInterface
 	SubLoggerWithPrefix(ctx context.Context, prefix string) LoggerInterface
+	AddToContext(ctx context.Context) context.Context
 }
 
 type Logger struct {
